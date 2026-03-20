@@ -41,10 +41,8 @@
         .sidebar h2 {
             font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 0.75rem;
+            margin: 0;
             color: #1f2937;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 0.25rem;
         }
 
         .form-group { margin-bottom: 0.5rem; }
@@ -223,13 +221,9 @@
 
     <!-- ПАНЕЛЬ ВВЕДЕННЯ ДАНИХ -->
     <div class="sidebar no-print">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-4 border-b-2 border-blue-500 pb-2">
             <h2>📝 Вихідні дані</h2>
-        </div>
-        
-        <!-- Кнопки керування -->
-        <div class="flex gap-2 mb-6">
-            <button type="button" onclick="openSettings()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded transition shadow-md flex items-center justify-center gap-1 text-sm">
+            <button type="button" onclick="openSettings()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded transition shadow-md flex items-center gap-1 text-xs">
                 ⚙️ Списки
             </button>
         </div>
