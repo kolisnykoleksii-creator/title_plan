@@ -25,10 +25,10 @@
 
         /* --- ЛІВА ПАНЕЛЬ (ВВЕДЕННЯ ДАНИХ) --- */
         .sidebar {
-            width: 450px;
+            width: 400px;
             background: white;
             border-right: 1px solid #ccc;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -39,28 +39,28 @@
         }
 
         .sidebar h2 {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             color: #1f2937;
             border-bottom: 2px solid #3b82f6;
-            padding-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
         }
 
-        .form-group { margin-bottom: 1rem; }
+        .form-group { margin-bottom: 0.5rem; }
         .form-label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: #4b5563;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
         }
         .form-control {
             width: 100%;
-            padding: 0.5rem;
+            padding: 0.35rem 0.5rem;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: border-color 0.15s;
         }
         .form-control:focus {
@@ -70,16 +70,16 @@
         }
         .form-section {
             background: #f9fafb;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             border: 1px solid #e5e7eb;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         .form-section-title {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: bold;
             color: #374151;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -236,69 +236,62 @@
 
         <form id="dataForm">
             <!-- Період -->
-            <div class="form-section">
-                <div class="form-section-title">Період навчання</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="form-group">
-                        <label class="form-label">Початок:</label>
-                        <input type="number" id="input_period_start" class="form-control" value="2024" oninput="updateView()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Кінець:</label>
-                        <input type="number" id="input_period_end" class="form-control" value="2027" oninput="updateView()">
-                    </div>
+            <div class="form-section flex items-center justify-between py-2">
+                <div class="form-section-title" style="margin-bottom: 0;">Період навчання:</div>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="input_period_start" class="form-control text-center px-1 py-1" style="width: 70px;" value="2024" oninput="updateView()">
+                    <span class="text-gray-500 font-bold">-</span>
+                    <input type="number" id="input_period_end" class="form-control text-center px-1 py-1" style="width: 70px;" value="2027" oninput="updateView()">
                 </div>
             </div>
 
             <!-- Спеціальність -->
             <div class="form-section">
                 <div class="form-section-title">Спеціальність та Галузь</div>
-                <div class="form-group">
-                    <label class="form-label">Галузь знань:</label>
-                    <select id="input_branch" class="form-control" onchange="updateView()"></select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Спеціальність:</label>
-                    <select id="input_specialty" class="form-control" onchange="updateView()"></select>
-                </div>
-                 <div class="form-group">
-                    <label class="form-label">Ступінь:</label>
-                    <input type="text" id="input_degree" class="form-control" value="Фаховий молодший бакалавр" oninput="updateView()" list="degree_list">
-                    <datalist id="degree_list"></datalist>
-                </div>
-                 <div class="form-group">
-                    <label class="form-label">Освітня програма (Повна назва):</label>
-                    <select id="input_program" class="form-control" onchange="updateView()"></select>
-                </div>
-                 <div class="form-group">
-                    <label class="form-label">Форма навчання:</label>
-                    <select id="input_form" class="form-control" onchange="updateView()"></select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="form-group mb-0">
+                        <label class="form-label">Галузь:</label>
+                        <select id="input_branch" class="form-control" onchange="updateView()"></select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Спеціальність:</label>
+                        <select id="input_specialty" class="form-control" onchange="updateView()"></select>
+                    </div>
+                    <div class="form-group col-span-2 mb-0">
+                        <label class="form-label">Освітня програма:</label>
+                        <select id="input_program" class="form-control" onchange="updateView()"></select>
+                    </div>
+                     <div class="form-group mb-0">
+                        <label class="form-label">Ступінь:</label>
+                        <input type="text" id="input_degree" class="form-control" value="Фаховий молодший бакалавр" oninput="updateView()" list="degree_list">
+                        <datalist id="degree_list"></datalist>
+                    </div>
+                     <div class="form-group mb-0">
+                        <label class="form-label">Форма навчання:</label>
+                        <select id="input_form" class="form-control" onchange="updateView()"></select>
+                    </div>
                 </div>
             </div>
 
             <!-- Документи -->
             <div class="form-section">
                 <div class="form-section-title">Наказ та Договір</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="col-span-2">
-                        <label class="form-label text-xs">Дата договору:</label>
-                        <input type="date" id="input_contract_date" class="form-control" value="2024-08-16" oninput="updateView()">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="form-label mb-0">Дата договору:</label>
+                    <input type="date" id="input_contract_date" class="form-control w-auto" value="2024-08-16" oninput="updateView()">
+                </div>
+                <div class="border-t pt-2 grid grid-cols-3 gap-2">
+                    <div class="form-group mb-0">
+                        <label class="form-label">Курс:</label>
+                        <input type="text" id="input_course" class="form-control text-center" value="I" placeholder="Курс" oninput="updateView()">
                     </div>
-                    
-                    <div class="col-span-2 mt-2 border-t pt-2"><label class="form-label text-xs font-bold text-gray-700">Зарахування:</label></div>
-                    
-                    <div>
-                        <label class="form-label text-xs">Курс:</label>
-                        <input type="text" id="input_course" class="form-control" value="I" placeholder="Курс" oninput="updateView()">
+                    <div class="form-group mb-0">
+                        <label class="form-label">№ Наказу:</label>
+                        <input type="text" id="input_order_num" class="form-control text-center" value="95с" placeholder="№" oninput="updateView()">
                     </div>
-                    <div>
-                        <label class="form-label text-xs">№ Наказу:</label>
-                        <input type="text" id="input_order_num" class="form-control" value="95с" placeholder="№" oninput="updateView()">
-                    </div>
-                    
-                    <div class="col-span-2">
-                         <label class="form-label text-xs">Дата наказу:</label>
-                        <input type="date" id="input_order_date" class="form-control" value="2024-08-16" oninput="updateView()">
+                    <div class="form-group mb-0">
+                         <label class="form-label">Дата:</label>
+                        <input type="date" id="input_order_date" class="form-control px-1 text-center" value="2024-08-16" oninput="updateView()">
                     </div>
                 </div>
             </div>
@@ -306,34 +299,36 @@
             <!-- Підписи -->
             <div class="form-section">
                 <div class="form-section-title">Відповідальні особи</div>
-                <div class="form-group">
-                    <label class="form-label">Завідувач відділення:</label>
-                    <select id="input_head" class="form-control" onchange="updateView()"></select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Куратор групи:</label>
-                    <select id="input_curator" class="form-control" onchange="updateView()"></select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="form-group mb-0">
+                        <label class="form-label">Зав. відділення:</label>
+                        <select id="input_head" class="form-control" onchange="updateView()"></select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Куратор:</label>
+                        <select id="input_curator" class="form-control" onchange="updateView()"></select>
+                    </div>
                 </div>
             </div>
             
             <!-- Здобувач освіти -->
             <div class="form-section" style="border: 2px solid #93c5fd; background-color: #eff6ff;">
                 <div class="form-section-title" style="color: #1e40af;">Здобувач освіти</div>
-                <div class="form-group">
+                <div class="form-group mb-1">
                     <label class="form-label">ПІБ (Повністю):</label>
                     <select id="input_student_full" class="form-control" onchange="updateView()"></select>
                 </div>
-                 <div class="form-group">
+                 <div class="form-group mb-0">
                     <label class="form-label">ПІБ (Ініціали):</label>
                     <select id="input_student_short" class="form-control" onchange="updateView()"></select>
                 </div>
             </div>
 
-            <button type="button" onclick="openSaveModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded transition shadow-lg flex items-center justify-center gap-2 text-base mt-2 mb-4">
+            <button type="button" onclick="openSaveModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition shadow-lg flex items-center justify-center gap-2 text-base mt-2 mb-2">
                 💾 Зберегти PDF
             </button>
 
-            <div class="text-xs text-gray-500 mt-4 mb-8 text-center">
+            <div class="text-xs text-gray-500 mt-2 mb-4 text-center">
                 Дані зберігаються у вашому браузері.
             </div>
         </form>
