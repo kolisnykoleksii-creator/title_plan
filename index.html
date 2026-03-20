@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Генератор Індивідуального Плану (А5)">
+    <meta name="theme-color" content="#e5e7eb">
+    <title>Генератор Індивідуального Плану (А5)</title>
+    <!-- Favicon placeholder -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* --- ШРИФТИ ТА БАЗОВІ НАЛАШТУВАННЯ --- */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #e5e7eb;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- ЛІВА ПАНЕЛЬ (ВВЕДЕННЯ ДАНИХ) --- */
+        .sidebar {
+            width: 450px;
+            background: white;
+            border-right: 1px solid #ccc;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .sidebar h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #1f2937;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.25rem;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            transition: border-color 0.15s;
+        }
+        .form-control:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .form-section {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 15px;
+        }
+        .form-section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- МОДАЛЬНІ ВІКНА (Спільні стилі) --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 90%;
+        }
+        .modal-large { width: 800px; max-height: 90vh; overflow-y: auto; }
+        .modal-small { width: 400px; }
+
+        .modal h3 { margin-top: 0; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; }
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .modal textarea {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 0.85em;
+            resize: vertical;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        /* --- ПРАВА ПАНЕЛЬ (ПЕРЕГЛЯД) --- */
+        .preview-area {
+            flex-grow: 1;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            background-color: #525659;
+        }
+
+        /* --- СТОРІНКА А5 --- */
+        #page-content {
+            background: white;
+            width: 148mm;
+            height: 210mm;
+            padding: 10mm 10mm;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Times New Roman', Times, serif;
+            color: black;
+        }
+        
+        .data-output {
+            border-bottom: 1px solid black;
+            min-width: 20px;
+            display: inline-block;
+            text-align: center;
+            font-weight: bold;
+            padding: 0 5px;
+            white-space: nowrap;
+        }
+        
+        /* БЛОЧНИЙ СТИЛЬ: Багаторядковий з лініями на всю ширину */
+        .data-output-multiline {
+            display: block;
+            width: 100%;
+            line-height: 1.5em; 
+            background-image: linear-gradient(transparent calc(1.5em - 1px), black calc(1.5em - 1px));
+            background-size: 100% 1.5em;
+            font-weight: bold;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: break-word;
+            border-bottom: none;
+        }
+        
+        .data-output.block-output { display: block; width: 100%; }
+        .data-output:empty::before { content: "\00a0"; }
+        .input-label {
+            font-size: 8pt; text-align: center; margin-top: 2px; color: #333; line-height: 1;
+        }
+        .photo-box {
+            width: 30mm; height: 40mm; border: 1px solid black;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10pt; color: #888; float: left; margin-right: 15px;
+        }
+
+        /* --- ДРУК --- */
+        @media print {
+            body { background: white; display: block; height: auto; overflow: visible; }
+            .sidebar, .modal-overlay { display: none !important; }
+            .preview-area { padding: 0; background: white; display: block; overflow: visible; }
+            #page-content { box-shadow: none; margin: 0; width: 100%; height: 100%; page-break-after: always; }
+            .no-print { display: none !important; }
+        }
+        
+        /* Утиліти */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-justify { text-align: justify; }
+        .font-bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+        .text-sm { font-size: 10pt; }
+        .text-xs { font-size: 9pt; }
+        .text-lg { font-size: 12pt; }
+        .mb-1 { margin-bottom: 4px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
+        .mt-1 { margin-top: 4px; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-end { align-items: flex-end; }
+        .w-full { width: 100%; }
+        .w-1\/3 { width: 33.333333%; }
+    </style>
+</head>
+<body>
+
+    <!-- ПАНЕЛЬ ВВЕДЕННЯ ДАНИХ -->
+    <div class="sidebar no-print">
+        <div class="flex justify-between items-center mb-4">
+            <h2>📝 Вихідні дані</h2>
+        </div>
+        
+        <!-- Кнопки керування -->
+        <div class="flex gap-2 mb-6">
+            <button type="button" onclick="openSettings()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded transition shadow-md flex items-center justify-center gap-1 text-sm">
+                ⚙️ Списки
+            </button>
+        </div>
+
+        <form id="dataForm">
+            <!-- Період -->
+            <div class="form-section">
+                <div class="form-section-title">Період навчання</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="form-group">
+                        <label class="form-label">Початок:</label>
+                        <input type="number" id="input_period_start" class="form-control" value="2024" oninput="updateView()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Кінець:</label>
+                        <input type="number" id="input_period_end" class="form-control" value="2027" oninput="updateView()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Спеціальність -->
+            <div class="form-section">
+                <div class="form-section-title">Спеціальність та Галузь</div>
+                <div class="form-group">
+                    <label class="form-label">Галузь знань:</label>
+                    <select id="input_branch" class="form-control" onchange="updateView()"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Спеціальність:</label>
+                    <select id="input_specialty" class="form-control" onchange="updateView()"></select>
+                </div>
+                 <div class="form-group">
+                    <label class="form-label">Ступінь:</label>
+                    <input type="text" id="input_degree" class="form-control" value="Фаховий молодший бакалавр" oninput="updateView()" list="degree_list">
+                    <datalist id="degree_list"></datalist>
+                </div>
+                 <div class="form-group">
+                    <label class="form-label">Освітня програма (Повна назва):</label>
+                    <select id="input_program" class="form-control" onchange="updateView()"></select>
+                </div>
+                 <div class="form-group">
+                    <label class="form-label">Форма навчання:</label>
+                    <select id="input_form" class="form-control" onchange="updateView()"></select>
+                </div>
+            </div>
+
+            <!-- Документи -->
+            <div class="form-section">
+                <div class="form-section-title">Наказ та Договір</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="col-span-2">
+                        <label class="form-label text-xs">Дата договору:</label>
+                        <input type="date" id="input_contract_date" class="form-control" value="2024-08-16" oninput="updateView()">
+                    </div>
+                    
+                    <div class="col-span-2 mt-2 border-t pt-2"><label class="form-label text-xs font-bold text-gray-700">Зарахування:</label></div>
+                    
+                    <div>
+                        <label class="form-label text-xs">Курс:</label>
+                        <input type="text" id="input_course" class="form-control" value="I" placeholder="Курс" oninput="updateView()">
+                    </div>
+                    <div>
+                        <label class="form-label text-xs">№ Наказу:</label>
+                        <input type="text" id="input_order_num" class="form-control" value="95с" placeholder="№" oninput="updateView()">
+                    </div>
+                    
+                    <div class="col-span-2">
+                         <label class="form-label text-xs">Дата наказу:</label>
+                        <input type="date" id="input_order_date" class="form-control" value="2024-08-16" oninput="updateView()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Підписи -->
+            <div class="form-section">
+                <div class="form-section-title">Відповідальні особи</div>
+                <div class="form-group">
+                    <label class="form-label">Завідувач відділення:</label>
+                    <select id="input_head" class="form-control" onchange="updateView()"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Куратор групи:</label>
+                    <select id="input_curator" class="form-control" onchange="updateView()"></select>
+                </div>
+            </div>
+            
+            <!-- Здобувач освіти -->
+            <div class="form-section" style="border: 2px solid #93c5fd; background-color: #eff6ff;">
+                <div class="form-section-title" style="color: #1e40af;">Здобувач освіти</div>
+                <div class="form-group">
+                    <label class="form-label">ПІБ (Повністю):</label>
+                    <select id="input_student_full" class="form-control" onchange="updateView()"></select>
+                </div>
+                 <div class="form-group">
+                    <label class="form-label">ПІБ (Ініціали):</label>
+                    <select id="input_student_short" class="form-control" onchange="updateView()"></select>
+                </div>
+            </div>
+
+            <button type="button" onclick="openSaveModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded transition shadow-lg flex items-center justify-center gap-2 text-base mt-2 mb-4">
+                💾 Зберегти PDF
+            </button>
+
+            <div class="text-xs text-gray-500 mt-4 mb-8 text-center">
+                Дані зберігаються у вашому браузері.
+            </div>
+        </form>
+    </div>
+
+    <!-- МОДАЛЬНЕ ВІКНО: НАЛАШТУВАННЯ СПИСКІВ -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal modal-large">
+            <h3 class="text-lg font-bold mb-4">Редагування всіх списків</h3>
+            <p class="text-sm text-gray-600 mb-4">Вставте списки, кожен елемент з нового рядка.</p>
+            
+            <div class="modal-grid">
+                <div>
+                    <label class="font-bold text-sm block mb-1">Студенти (Повні імена):</label>
+                    <textarea id="edit_students_area"></textarea>
+                </div>
+                <div>
+                    <label class="font-bold text-sm block mb-1">Студенти (Ініціали):</label>
+                    <textarea id="edit_students_short_area"></textarea>
+                </div>
+
+                 <div>
+                    <label class="font-bold text-sm block mb-1">Ступені (Фаховий...):</label>
+                    <textarea id="edit_degrees_area"></textarea>
+                </div>
+                <div>
+                    <label class="font-bold text-sm block mb-1">Галузі знань (Код + Назва):</label>
+                    <textarea id="edit_branches_area"></textarea>
+                </div>
+                
+                <div style="grid-column: span 2;">
+                    <label class="font-bold text-sm block mb-1">Спеціальності (Код + Назва):</label>
+                    <textarea id="edit_specialties_area"></textarea>
+                </div>
+                
+                <div style="grid-column: span 2;">
+                    <label class="font-bold text-sm block mb-1">Освітні програми (Повні назви):</label>
+                    <textarea id="edit_programs_area"></textarea>
+                </div>
+
+                <div>
+                    <label class="font-bold text-sm block mb-1">Завідувачі відділення:</label>
+                    <textarea id="edit_heads_area"></textarea>
+                </div>
+                <div>
+                    <label class="font-bold text-sm block mb-1">Куратори групи:</label>
+                    <textarea id="edit_curators_area"></textarea>
+                </div>
+                 <div>
+                    <label class="font-bold text-sm block mb-1">Форми навчання:</label>
+                    <textarea id="edit_forms_area"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button onclick="openConfirmResetModal()" class="text-red-500 hover:text-red-700 text-sm mr-auto underline">Відновити всі стандартні</button>
+                <button onclick="closeSettings()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Скасувати</button>
+                <button onclick="saveLists()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЕ ВІКНО: ЗБЕРЕЖЕННЯ PDF -->
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal modal-small">
+            <h3>Збереження PDF</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Назва файлу:</label>
+                <input type="text" id="pdfFileName" class="w-full border p-2 rounded" placeholder="file.pdf">
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeSaveModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Скасувати</button>
+                <button onclick="performDownload()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЕ ВІКНО: ПІДТВЕРДЖЕННЯ СКИДАННЯ -->
+    <div id="confirmResetModal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal modal-small">
+            <h3 class="text-red-600">Увага!</h3>
+            <p class="mb-4">Ви впевнені? Всі ваші зміни списків будуть видалені і повернуті до заводських налаштувань.</p>
+            <div class="modal-buttons">
+                <button onclick="closeConfirmResetModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Ні, залишити</button>
+                <button onclick="performReset()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Так, скинути</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОБЛАСТЬ ПЕРЕГЛЯДУ -->
+    <div class="preview-area">
+        <div class="page" id="page-content">
+            
+            <!-- Шапка -->
+            <div class="text-center font-bold text-sm uppercase mb-3 leading-tight">
+                ДНІПРОВСЬКИЙ ФАХОВИЙ КОЛЕДЖ ЗАЛІЗНИЧНОГО<br>
+                ТРАНСПОРТУ ТА ТРАНСПОРТНОЇ ІНФРАСТРУКТУРИ
+            </div>
+
+            <div class="text-center font-bold text-sm uppercase mb-1">
+                ІНДИВІДУАЛЬНИЙ НАВЧАЛЬНИЙ ПЛАН ЗДОБУВАЧА<br>
+                ФАХОВОЇ ПЕРЕДВИЩОЇ ОСВІТИ
+            </div>
+
+            <div class="text-center text-sm mb-2">
+                за період навчання <span id="out_period" class="data-output" style="width: 80px;">2024-2027</span> н.р.
+            </div>
+
+            <!-- Прізвище -->
+            <div class="mb-4">
+                <span id="out_student_full" class="data-output block-output text-lg uppercase">БИРИЛЛО Євген Олегович</span>
+                <div class="input-label">(прізвище, ім’я та по батькові здобувача освіти)</div>
+            </div>
+
+            <!-- Основний блок -->
+            <div class="flex mb-2">
+                <div class="photo-box shrink-0">
+                    <span>3x4см</span>
+                    <span class="mt-8">М.П.</span>
+                </div>
+
+                <div class="flex-grow flex flex-col justify-between" style="height: 40mm;">
+                    <div>
+                        <span id="out_branch" class="data-output block-output">27 Транспорт</span>
+                        <div class="input-label">(галузь знань)</div>
+                    </div>
+                    <div>
+                        <span id="out_specialty" class="data-output block-output">273 Залізничний транспорт</span>
+                        <div class="input-label">(спеціальність)</div>
+                    </div>
+                    <div>
+                        <span id="out_degree" class="data-output block-output">Фаховий молодший бакалавр</span>
+                        <div class="input-label">(Освітньо-професійний ступінь)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Програма (на всю ширину, з переносом) -->
+            <div class="mb-2 text-center" style="width: 100%;">
+                <span id="out_program" class="data-output-multiline">Технічне обслуговування і ремонт пристроїв електропостачання залізниць</span>
+                <div class="input-label">(Освітньо-професійна програма)</div>
+            </div>
+
+            <!-- Форма навчання -->
+            <div class="mb-3">
+                <div style="width: 100%; margin: 0 auto;">
+                    <span id="out_form" class="data-output-multiline">Денна</span>
+                    <div class="input-label">(Форма здобуття освіти)</div>
+                </div>
+            </div>
+
+            <!-- Текст договору -->
+            <div class="text-sm leading-relaxed mb-3">
+                <div class="flex items-end mb-1">
+                    <span>Договір про надання освітніх послуг від „</span>
+                    <span id="out_contract_day" class="data-output" style="width: 25px;">16</span>
+                    <span>”</span>
+                    <span id="out_contract_month" class="data-output" style="width: 80px;">серпня</span>
+                    <span>20</span>
+                    <span id="out_contract_year" class="data-output" style="width: 25px; text-align: left;">24</span>
+                    <span>року</span>
+                </div>
+
+                <div class="flex items-end flex-wrap mb-1">
+                    <span>Зарахований (на)</span>
+                    <span id="out_course" class="data-output" style="width: 30px; margin: 0 4px;">I</span>
+                    <span>курс наказ №</span>
+                    <span id="out_order_num" class="data-output" style="width: 50px; margin: 0 4px;">95с</span>
+                    <span>від „</span>
+                    <span id="out_order_day" class="data-output" style="width: 25px;">16</span>
+                    <span>”</span>
+                    <span id="out_order_month" class="data-output" style="width: 80px;">серпня</span>
+                    <span>20</span>
+                    <span id="out_order_year" class="data-output" style="width: 25px; text-align: left;">24</span>
+                    <span>року</span>
+                </div>
+
+                <div class="mt-2 text-justify text-xs">
+                    З Положенням про академічну доброчесність та систему внутрішнього забезпечення якості освіти ознайомлений
+                </div>
+                <!-- Оновлений блок підпису для центрування -->
+                <div class="w-1/3 ml-auto mt-4">
+                    <div class="border-b border-black"></div>
+                    <div class="text-center text-xs">(підпис)</div>
+                </div>
+            </div>
+
+            <!-- Підписи -->
+            <div class="mt-auto">
+                <!-- Завідувач -->
+                <div class="flex items-end mb-3">
+                    <div class="w-1/3 text-sm">Завідувач відділення</div>
+                    <div class="w-1/3 border-b border-black mx-2"></div>
+                    <div class="w-1/3 text-center font-bold text-sm">
+                        <span id="out_head" class="data-output block-output text-center border-0" style="border-bottom:none;">Литвак Ю.П.</span>
+                    </div>
+                </div>
+                <div class="flex justify-center text-xs -mt-3 mb-2">
+                    <div class="w-1/3"></div>
+                    <div class="w-1/3 text-center">(підпис)</div>
+                    <div class="w-1/3"></div>
+                </div>
+
+                <!-- Куратор -->
+                <div class="flex items-end mb-3">
+                    <div class="w-1/3 text-sm">Куратор групи</div>
+                    <div class="w-1/3 border-b border-black mx-2"></div>
+                    <div class="w-1/3 text-center font-bold text-sm">
+                         <span id="out_curator" class="data-output block-output text-center border-0" style="border-bottom:none;">Колісник О.С.</span>
+                    </div>
+                </div>
+                <div class="flex justify-center text-xs -mt-3 mb-2">
+                    <div class="w-1/3"></div>
+                    <div class="w-1/3 text-center">(підпис)</div>
+                    <div class="w-1/3"></div>
+                </div>
+
+                <!-- Здобувач -->
+                <div class="flex items-end mb-1">
+                    <div class="w-1/3 text-sm">Здобувач ФПО</div>
+                    <div class="w-1/3 border-b border-black mx-2"></div>
+                    <div class="w-1/3 text-center font-bold text-sm">
+                        <span id="out_student_short" class="data-output block-output text-center border-0" style="border-bottom:none;">Бирилло Є.О.</span>
+                    </div>
+                </div>
+                <div class="flex justify-center text-xs -mt-1">
+                    <div class="w-1/3"></div>
+                    <div class="w-1/3 text-center">(підпис)</div>
+                    <div class="w-1/3"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- СТАНДАРТНІ ДАНІ ---
+        const defaults = {
+            students: ["БИРИЛЛО Євген Олегович", "ІВАНЕНКО Іван Іванович", "ПЕТРЕНКО Петро Петрович"],
+            studentsShort: ["Бирилло Є.О.", "Іваненко І.І.", "Петренко П.П."],
+            heads: ["Литвак Ю.П.", "Сидоренко А.А."],
+            curators: ["Колісник О.С.", "Мельник В.В."],
+            branches: ["27 Транспорт", "12 Інформаційні технології", "14 Електрична інженерія"],
+            specialties: ["273 Залізничний транспорт", "123 Комп’ютерна інженерія", "141 Електроенергетика"],
+            degrees: ["Фаховий молодший бакалавр", "Молодший бакалавр", "Бакалавр"],
+            programs: [
+                "Технічне обслуговування і ремонт пристроїв електропостачання залізниць",
+                "Організація перевезень і управління на залізничному транспорті",
+                "Комп'ютерна інженерія",
+                "Технiчне обслуговування, ремонт та експлуатацiя тягового рухомого складу"
+            ],
+            forms: ["Денна", "Заочна", "Дуальна"]
+        };
+        
+        const monthsGenitive = [
+            "січня", "лютого", "березня", "квітня", "травня", "червня",
+            "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"
+        ];
+
+        // --- ГЛОБАЛЬНІ СПИСКИ ---
+        let lists = {};
+
+        // --- ЛОГІКА СПИСКІВ ---
+        function loadLists() {
+            // Завантажуємо все з localStorage або беремо дефолт
+            const keys = Object.keys(defaults);
+            keys.forEach(key => {
+                const stored = localStorage.getItem('plan_' + key);
+                lists[key] = stored ? JSON.parse(stored) : [...defaults[key]];
+            });
+            renderAllOptions();
+        }
+
+        // Універсальна функція заповнення Select або Datalist
+        function fillOptions(elementId, items, isDatalist = false, currentValue = null) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            
+            el.innerHTML = '';
+            
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                if (!isDatalist) opt.innerText = item;
+                el.appendChild(opt);
+            });
+
+            if (!isDatalist && currentValue) {
+                if (items.includes(currentValue)) {
+                    el.value = currentValue;
+                } else if (items.length > 0) {
+                     el.value = items[0]; 
+                }
+            }
+        }
+
+        function renderAllOptions() {
+            fillOptions('degree_list', lists.degrees, true);
+
+            const mapSelects = {
+                'input_student_full': 'students',
+                'input_student_short': 'studentsShort', 
+                'input_program': 'programs',
+                'input_head': 'heads',
+                'input_curator': 'curators',
+                'input_branch': 'branches',
+                'input_specialty': 'specialties',
+                'input_form': 'forms'
+            };
+
+            for (const [id, listKey] of Object.entries(mapSelects)) {
+                const el = document.getElementById(id);
+                const currentVal = el ? el.value : null;
+                fillOptions(id, lists[listKey], false, currentVal);
+            }
+
+            updateView();
+        }
+
+        function saveLists() {
+            const mapAreaToKey = {
+                'edit_students_area': 'students',
+                'edit_students_short_area': 'studentsShort',
+                'edit_heads_area': 'heads',
+                'edit_curators_area': 'curators',
+                'edit_branches_area': 'branches',
+                'edit_specialties_area': 'specialties',
+                'edit_degrees_area': 'degrees',
+                'edit_programs_area': 'programs',
+                'edit_forms_area': 'forms'
+            };
+
+            for (const [areaId, key] of Object.entries(mapAreaToKey)) {
+                const text = document.getElementById(areaId).value;
+                lists[key] = text.split('\n').map(s => s.trim()).filter(s => s !== '');
+                localStorage.setItem('plan_' + key, JSON.stringify(lists[key]));
+            }
+
+            renderAllOptions();
+            closeSettings();
+        }
+
+        function performReset() {
+            Object.keys(defaults).forEach(key => {
+                localStorage.removeItem('plan_' + key);
+            });
+            loadLists();
+            closeConfirmResetModal();
+            closeSettings();
+        }
+
+        // --- МОДАЛЬНІ ВІКНА (JS) ---
+        function openSettings() {
+             const mapKeyToArea = {
+                'students': 'edit_students_area',
+                'studentsShort': 'edit_students_short_area',
+                'heads': 'edit_heads_area',
+                'curators': 'edit_curators_area',
+                'branches': 'edit_branches_area',
+                'specialties': 'edit_specialties_area',
+                'degrees': 'edit_degrees_area',
+                'programs': 'edit_programs_area',
+                'forms': 'edit_forms_area'
+            };
+
+            for (const [key, areaId] of Object.entries(mapKeyToArea)) {
+                document.getElementById(areaId).value = lists[key].join('\n');
+            }
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // SAVE MODAL
+        function openSaveModal() {
+            const studentName = document.getElementById('out_student_short').innerText.trim();
+            let defaultFileName = 'individual_plan.pdf';
+            if (studentName) {
+                 defaultFileName = `План_${studentName.replace(/[\s\.]/g, '_')}.pdf`;
+            }
+            document.getElementById('pdfFileName').value = defaultFileName;
+            document.getElementById('saveModal').style.display = 'flex';
+        }
+        function closeSaveModal() {
+            document.getElementById('saveModal').style.display = 'none';
+        }
+        function performDownload() {
+            let fileName = document.getElementById('pdfFileName').value;
+            if (!fileName) fileName = 'individual_plan.pdf';
+            if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
+
+            const element = document.getElementById('page-content');
+            const opt = {
+                margin:       0,
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+            closeSaveModal();
+        }
+
+        // RESET CONFIRM MODAL
+        function openConfirmResetModal() {
+            document.getElementById('confirmResetModal').style.display = 'flex';
+        }
+        function closeConfirmResetModal() {
+            document.getElementById('confirmResetModal').style.display = 'none';
+        }
+
+        // --- HELPER DATE FORMATTER ---
+        function updateDateDisplay(dateInputId, dayId, monthId, yearId) {
+            const dateVal = document.getElementById(dateInputId).value;
+            if (!dateVal) return;
+            const parts = dateVal.split('-'); 
+            if (parts.length !== 3) return;
+
+            const y = parts[0].slice(2);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+
+            const dayEl = document.getElementById(dayId);
+            const monthEl = document.getElementById(monthId);
+            const yearEl = document.getElementById(yearId);
+
+            if(dayEl) dayEl.innerText = d;
+            if(monthEl) monthEl.innerText = monthsGenitive[m] || "";
+            if(yearEl) yearEl.innerText = y;
+        }
+
+        // --- СИНХРОНІЗАЦІЯ ---
+        function updateView() {
+            const map = {
+                'input_student_full': 'out_student_full',
+                'input_branch': 'out_branch',
+                'input_specialty': 'out_specialty',
+                'input_degree': 'out_degree',
+                'input_program': 'out_program',
+                'input_form': 'out_form',
+                'input_course': 'out_course',
+                'input_order_num': 'out_order_num',
+                'input_head': 'out_head',
+                'input_curator': 'out_curator',
+                'input_student_short': 'out_student_short'
+            };
+
+            for (const [inputId, outId] of Object.entries(map)) {
+                const inputEl = document.getElementById(inputId);
+                const outEl = document.getElementById(outId);
+                if (inputEl && outEl) {
+                    outEl.innerText = inputEl.value;
+                }
+            }
+
+            const startYear = document.getElementById('input_period_start').value;
+            const endYear = document.getElementById('input_period_end').value;
+            const periodOut = document.getElementById('out_period');
+            if (periodOut) {
+                periodOut.innerText = startYear + '-' + endYear;
+            }
+
+            updateDateDisplay('input_contract_date', 'out_contract_day', 'out_contract_month', 'out_contract_year');
+            updateDateDisplay('input_order_date', 'out_order_day', 'out_order_month', 'out_order_year');
+        }
+        
+        window.onload = function() {
+            loadLists(); 
+        };
+    </script>
+
+</body>
+</html>
